@@ -1,0 +1,12 @@
+budget_sweep: [50, 100, 250, 500, 1000, 2500]
+max_wall_time_s: 60.0
+
+execution:
+  n_episodes: 10
+  receding_horizon: true
+
+planners: [bfs, mcts, cem, beam_search, latent_rollout, value_iteration]
+envs: [maze_10x10]
+world_models: [perfect]
+
+results_dir: results/ablation_budget/
