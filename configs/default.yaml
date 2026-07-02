@@ -1,0 +1,59 @@
+budget:
+  max_model_calls: 200
+  max_wall_time_s: 30.0
+
+execution:
+  n_episodes: 20
+  receding_horizon: true
+  seeds: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
+
+# World models to sweep.
+# For dino_wm / lewm, pass --checkpoints <path1> <path2> on the CLI.
+# Use "perfect" during development (no checkpoint needed).
+world_models:
+  - dino_wm
+  - lewm
+
+# Planners to sweep (use "all", "track1", "track2", or a list)
+planners: all
+
+# Environments — MiniGrid for neural world models, maze for oracle baselines
+envs:
+  - minigrid_empty_8x8
+  - minigrid_fourrooms
+
+planner_kwargs:
+  # All configs scaled so total step() calls fit within budget=200.
+  # horizon=10: receding-horizon plans 10 steps ahead per real env step.
+  mcts:
+    n_simulations: 20    # 20 sims × 10 depth = 200 calls
+    c_puct: 1.41
+    rollout_depth: 10
+  mcts_value:
+    n_simulations: 20
+    c_puct: 1.41
+  cem:
+    n_samples: 40        # 40 samples × 5 horizon × 1 iter = 200 calls
+    elite_frac: 0.1
+    n_iters: 1
+    horizon: 5
+  beam_search:
+    beam_width: 10
+    horizon: 20          # 10 beams × 20 steps = 200 calls
+  random_shooting:
+    n_samples: 40        # 40 × 5 = 200 calls
+    horizon: 5
+  latent_rollout:
+    horizon: 20
+    gamma: 0.99
+  muzero_style:
+    n_simulations: 20    # 20 sims × ~10 depth ≈ 200 calls
+    c_puct: 1.25
+  value_iteration:
+    gamma: 0.99
+    eps: 1.0e-4
+  policy_iteration:
+    gamma: 0.99
+    eval_iters: 100
+
+results_dir: results/

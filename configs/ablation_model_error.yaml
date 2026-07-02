@@ -1,0 +1,14 @@
+budget:
+  max_model_calls: 1000
+  max_wall_time_s: 30.0
+
+execution:
+  n_episodes: 10
+  receding_horizon: true
+
+corruption_levels: [0.0, 0.1, 0.2, 0.5]
+planners: [bfs, mcts, cem, random_shooting, latent_rollout]
+envs: [maze_10x10]
+world_model: tabular
+
+results_dir: results/ablation_model_error/
