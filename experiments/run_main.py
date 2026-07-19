@@ -57,6 +57,8 @@ def main():
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--episodes", type=int)
     parser.add_argument("--budget", type=int)
+    parser.add_argument("--wall-time", type=float,
+                        help="Max wall time per planning round (seconds). Overrides config.")
     parser.add_argument("--output")
     args = parser.parse_args()
 
@@ -70,7 +72,7 @@ def main():
     seeds = cfg["execution"].get("seeds", list(range(n_episodes)))
     budget_cfg = BudgetConfig(
         max_model_calls=args.budget or cfg["budget"]["max_model_calls"],
-        max_wall_time_s=cfg["budget"]["max_wall_time_s"],
+        max_wall_time_s=args.wall_time or cfg["budget"]["max_wall_time_s"],
     )
     results_dir = args.output or cfg["results_dir"]
     run_id = time.strftime("%Y%m%d_%H%M%S")

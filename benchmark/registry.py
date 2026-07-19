@@ -101,4 +101,18 @@ def make_world_model(name: str, env, checkpoint: str = None, device: str = "cpu"
             checkpoint_path=checkpoint,
             device=device,
         )
+    if name == "cnn_wm":
+        from benchmark.world_models.cnn_wm import CNNWorldModel
+        return CNNWorldModel(
+            n_actions=env.n_actions,
+            checkpoint_path=checkpoint,
+            device=device,
+        )
+    if name == "dino_wm_ft":
+        from benchmark.world_models.dino_wm import DINOWorldModel
+        return DINOWorldModel(
+            n_actions=env.n_actions,
+            checkpoint_path=checkpoint,
+            device=device,
+        )
     raise ValueError(f"Unknown world model: {name}")

@@ -12,8 +12,10 @@ from benchmark.core.budget import BudgetConfig, BudgetExhausted, PlanningBudget
 from benchmark.core.world_model import State, WorldModel
 
 
-def _hash(z: State) -> tuple:
-    return tuple(z.tolist())
+def _hash(z):
+    if isinstance(z, np.ndarray):
+        return tuple(z.tolist())
+    return z  # int IDs (PerfectModel) or other hashable types
 
 
 class PolicyIterationPlanner(Planner):

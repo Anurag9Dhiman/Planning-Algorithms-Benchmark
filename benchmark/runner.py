@@ -67,6 +67,7 @@ class BenchmarkRunner:
         obs = env.reset(seed=seed)
         z = world_model.encode(obs)
         total_reward = 0.0
+        total_model_calls = 0
         all_actions: List[int] = []
         all_rewards: List[float] = []
         budget_exhausted = False
@@ -80,6 +81,7 @@ class BenchmarkRunner:
                 action_seq = [random.randint(0, env.n_actions - 1)]
                 budget_exhausted = True
 
+            total_model_calls += budget.model_calls_used
             to_execute = [action_seq[0]] if self.receding_horizon else action_seq
 
             done = False
@@ -107,7 +109,7 @@ class BenchmarkRunner:
             episode_return=total_reward,
             steps_taken=len(all_actions),
             success=done and total_reward > 0,
-            model_calls_used=budget.model_calls_used,
+            model_calls_used=total_model_calls,
             wall_time_s=time.time() - t0,
             budget_exhausted=budget_exhausted,
             actions_taken=all_actions,
