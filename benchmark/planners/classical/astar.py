@@ -10,8 +10,10 @@ from benchmark.core.budget import BudgetExhausted, PlanningBudget
 from benchmark.core.world_model import State, WorldModel
 
 
-def _hash(z: State) -> tuple:
-    return tuple(np.round(z, 2).tolist())
+def _hash(z):
+    if isinstance(z, np.ndarray):
+        return tuple(np.round(z, 4).tolist())
+    return z  # int IDs (PerfectModel) or other hashable types
 
 
 class AStarPlanner(Planner):
