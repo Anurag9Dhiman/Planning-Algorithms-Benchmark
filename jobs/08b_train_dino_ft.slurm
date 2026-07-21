@@ -16,7 +16,7 @@
 PYTHON=/home/ma25m004/.conda/envs/llm_stack/bin/python3
 PROJECT=/home/ma25m004/Planning-Algorithms-Benchmark
 DATA=/scratch/ma25m004/Planning-Algorithms-Benchmark/data
-CKPT_IN=/home/ma25m004/Planning-Algorithms-Benchmark/checkpoints
+CKPT_IN=/scratch/ma25m004/Planning-Algorithms-Benchmark/checkpoints
 CKPT_OUT=/scratch/ma25m004/Planning-Algorithms-Benchmark/checkpoints
 
 export PYTHONUNBUFFERED=1
