@@ -25,7 +25,7 @@ from benchmark.core.budget import PlanningBudget
 from benchmark.core.world_model import State, WorldModel
 from training.models.heads import ActionEmbedding, DynamicsHead
 
-DINO_CHECKPOINT  = "/scratch/ma25m004/dinov2-small"
+DINO_CHECKPOINT  = os.environ.get("DINOV2_CHECKPOINT", "facebook/dinov2-small")
 LATENT_DIM       = 384
 ACTION_EMB_DIM   = 64
 

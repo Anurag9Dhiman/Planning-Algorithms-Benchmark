@@ -2,7 +2,7 @@
 DINO-WM World Model.
 
 Architecture:
-  Encoder  : frozen DINOv2-small (from /scratch/ma25m004/dinov2-small)
+  Encoder  : frozen DINOv2-small (facebook/dinov2-small via HuggingFace)
              RGB (H,W,3) -> CLS token z ∈ R^384
   Dynamics : learned DynamicsHead  f(z, a) -> z'
   Reward   : learned RewardHead    r(z, a) -> scalar
@@ -35,7 +35,7 @@ from training.models.heads import (
     ValueHead,
 )
 
-DINO_CHECKPOINT = "/scratch/ma25m004/dinov2-small"
+DINO_CHECKPOINT = os.environ.get("DINOV2_CHECKPOINT", "facebook/dinov2-small")
 LATENT_DIM = 384
 ACTION_EMB_DIM = 64
 
@@ -66,7 +66,11 @@ class DINOWorldModel(WorldModel):
                       If None, heads are randomly initialised (useful for
                       architecture smoke-tests; values will be meaningless).
     device          : "cpu" | "cuda"
-    done_threshold  : sigmoid probability above which step() returns done=True
+    done_threshold  : sigmoid probability above which step() returns done=True.
+                      Set to 0.9 (not 0.5) to suppress false positives: the done head
+                      fires on ~50% of out-of-distribution (dynamics-predicted) latents
+                      at the default 0.5 threshold, causing planners to return spurious
+                      terminal paths. On real encoder outputs done_accuracy=99.94%.
     """
 
     name = "dino_wm"
@@ -76,7 +80,7 @@ class DINOWorldModel(WorldModel):
         n_actions: int,
         checkpoint_path: Optional[str] = None,
         device: str = "cpu",
-        done_threshold: float = 0.5,
+        done_threshold: float = 0.9,
     ):
         self.n_actions = n_actions
         self.done_threshold = done_threshold

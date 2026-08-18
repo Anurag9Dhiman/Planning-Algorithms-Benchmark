@@ -22,7 +22,8 @@ def _hash(z):
 
 
 class _Node:
-    __slots__ = ("z", "parent", "action_taken", "children", "visit_count", "total_value", "untried_actions")
+    __slots__ = ("z", "parent", "action_taken", "children", "visit_count", "total_value",
+                 "untried_actions", "edge_reward", "edge_done")
 
     def __init__(self, z: State, actions: List[int], parent=None, action_taken=None):
         self.z = z
@@ -33,6 +34,10 @@ class _Node:
         self.total_value = 0.0
         self.untried_actions = list(actions)
         random.shuffle(self.untried_actions)
+        # Reward and done cached from the transition that created this node.
+        # Reused during tree traversal to avoid re-calling wm.step() on known edges.
+        self.edge_reward: float = 0.0
+        self.edge_done: bool = False
 
     @property
     def q_value(self) -> float:
@@ -75,17 +80,17 @@ class _MCTSBase(Planner):
             if not node.children:
                 return node, cum_reward
             node = max(node.children.values(), key=lambda n: n.ucb1(self.c_puct))
-            # re-simulate the edge to get reward
-            _, r, done = wm.step(node.parent.z if node.parent else node.z,
-                                 node.action_taken, budget)
-            cum_reward += r
-            if done:
+            # Use reward/done cached at expansion time — no extra wm.step() call.
+            cum_reward += node.edge_reward
+            if node.edge_done:
                 return node, cum_reward
 
     def _expand(self, node: _Node, wm: WorldModel, budget: PlanningBudget, cum_reward: float) -> Tuple[_Node, float]:
         action = node.untried_actions.pop()
         next_z, r, done = wm.step(node.z, action, budget)
         child = _Node(next_z, wm.action_space(), parent=node, action_taken=action)
+        child.edge_reward = r
+        child.edge_done = done
         node.children[action] = child
         return child, cum_reward + r
 

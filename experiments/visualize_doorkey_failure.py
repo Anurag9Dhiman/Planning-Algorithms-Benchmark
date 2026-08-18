@@ -238,7 +238,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--checkpoint", required=True)
     p.add_argument("--goal-data",  required=True)
-    p.add_argument("--output-dir", default="/scratch/ma25m004/Planning-Algorithms-Benchmark/viz/doorkey_failure")
+    p.add_argument("--output-dir", default="viz/doorkey_failure")
     p.add_argument("--seed",       type=int, default=3)
     p.add_argument("--device",     default="cuda" if torch.cuda.is_available() else "cpu")
     args = p.parse_args()

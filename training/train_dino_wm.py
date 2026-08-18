@@ -169,9 +169,19 @@ def train(args):
         mc     = torch.from_numpy(dataset.mc_return[idx]).float().to(device)
         return z, a, r, z_next, d, mc
 
+    # ── Class-imbalance weights (computed from full dataset) ──────────
+    done_pos_rate   = float(dataset.done.astype(float).mean())
+    done_pw         = (args.done_pos_weight if args.done_pos_weight is not None
+                       else (1.0 - done_pos_rate) / max(done_pos_rate, 1e-6))
+    reward_pos_rate = float((dataset.reward > 0).mean())
+    reward_pw       = (args.reward_pos_weight if args.reward_pos_weight is not None
+                       else (1.0 - reward_pos_rate) / max(reward_pos_rate, 1e-6))
+    done_pw_t = torch.tensor([done_pw], device=device)
+
     best_val_loss = float("inf")
     print(f"\nTraining DINO-WM heads for {args.epochs} epochs ...")
-    print(f"  train={n_train}  val={n_val}  batch={args.batch_size}  device={device}\n")
+    print(f"  train={n_train}  val={n_val}  batch={args.batch_size}  device={device}")
+    print(f"  done_pos_weight={done_pw:.1f}  reward_pos_weight={reward_pw:.1f}\n")
 
     for epoch in range(1, args.epochs + 1):
         # ── Train ──────────────────────────────────────────────────
@@ -191,8 +201,9 @@ def train(args):
             pi_logits = policy_h(z)
 
             l_dyn    = F.mse_loss(z_pred, z_next)
-            l_rew    = F.mse_loss(r_pred, r)
-            l_done   = F.binary_cross_entropy_with_logits(done_pred, d)
+            rew_w    = torch.where(r > 0, r.new_full(r.shape, reward_pw), torch.ones_like(r))
+            l_rew    = (rew_w * (r_pred - r) ** 2).mean()
+            l_done   = F.binary_cross_entropy_with_logits(done_pred, d, pos_weight=done_pw_t)
             l_value  = F.mse_loss(v_pred, mc)
             l_policy = F.cross_entropy(pi_logits, a)   # behaviour cloning
 
@@ -220,9 +231,11 @@ def train(args):
         with torch.no_grad():
             z, a, r, z_next, d, mc = get_batch(val_indices, shuffle=False)
             a_emb  = action_emb(a)
+            r_pred = reward_h(z, a_emb)
+            rew_w  = torch.where(r > 0, r.new_full(r.shape, reward_pw), torch.ones_like(r))
             l_dyn  = F.mse_loss(dynamics(z, a_emb), z_next).item()
-            l_rew  = F.mse_loss(reward_h(z, a_emb), r).item()
-            l_done = F.binary_cross_entropy_with_logits(done_h(z, a_emb), d).item()
+            l_rew  = (rew_w * (r_pred - r) ** 2).mean().item()
+            l_done = F.binary_cross_entropy_with_logits(done_h(z, a_emb), d, pos_weight=done_pw_t).item()
             l_val  = F.mse_loss(value_h(z), mc).item()
             val_loss = l_dyn + l_rew + l_done + l_val
 
@@ -274,6 +287,11 @@ def main():
     parser.add_argument("--w-done",   type=float, default=1.0)
     parser.add_argument("--w-value",  type=float, default=0.5)
     parser.add_argument("--w-policy", type=float, default=0.1)
+    # Class-imbalance corrections (auto-computed from data when not set)
+    parser.add_argument("--done-pos-weight",   type=float, default=None,
+                        help="pos_weight for done BCE; auto-computed from dataset if omitted")
+    parser.add_argument("--reward-pos-weight", type=float, default=None,
+                        help="weight for positive-reward transitions in weighted MSE; auto-computed if omitted")
     args = parser.parse_args()
 
     train(args)

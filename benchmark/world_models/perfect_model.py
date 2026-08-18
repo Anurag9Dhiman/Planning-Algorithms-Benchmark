@@ -34,6 +34,10 @@ class PerfectModel(WorldModel):
     def name(self) -> str:
         return "perfect"
 
+    @property
+    def n_actions(self) -> int:
+        return self._env.n_actions
+
     def encode(self, obs: np.ndarray) -> State:
         self._registry.clear()
         self._counter = 0

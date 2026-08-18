@@ -7,6 +7,7 @@ Usage:
 
 import json
 import glob
+import os
 from collections import defaultdict
 
 # ── FLOP table (GFLOPs per call) ──────────────────────────────────────────────
@@ -52,7 +53,7 @@ ENV_PROPS = {
 }
 
 # ── Result sources (model -> list of result dirs to search) ───────────────────
-RESULTS_BASE = "/scratch/ma25m004/Planning-Algorithms-Benchmark/results"
+RESULTS_BASE = os.environ.get("RESULTS_BASE", "results")
 SOURCES = {
     "dino_wm":    [f"{RESULTS_BASE}/base_benchmark",
                    f"{RESULTS_BASE}/doorkey_bench",

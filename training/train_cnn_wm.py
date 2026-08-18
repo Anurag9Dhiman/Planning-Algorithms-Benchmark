@@ -16,10 +16,10 @@ without requiring a separate EMA target network.
 Usage
 -----
     python training/train_cnn_wm.py \\
-        --data /scratch/ma25m004/Planning-Algorithms-Benchmark/data/minigrid_empty_8x8.npz \\
+        --data data/minigrid_empty_8x8.npz \\
         --epochs 100 \\
         --batch-size 256 \\
-        --output /scratch/ma25m004/Planning-Algorithms-Benchmark/checkpoints/cnn_wm_empty8x8.pt
+        --output checkpoints/cnn_wm_empty8x8.pt
 """
 
 import argparse
@@ -91,10 +91,21 @@ def train(args):
     )
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimiser, T_max=args.epochs)
 
+    # ── Class-imbalance weights ───────────────────────────────────────
+    done_pos_rate   = float(ds.done.astype(float).mean())
+    done_pw         = (args.done_pos_weight if args.done_pos_weight is not None
+                       else (1.0 - done_pos_rate) / max(done_pos_rate, 1e-6))
+    reward_pos_rate = float((ds.reward > 0).mean())
+    reward_pw       = (args.reward_pos_weight if args.reward_pos_weight is not None
+                       else (1.0 - reward_pos_rate) / max(reward_pos_rate, 1e-6))
+    args.done_pw   = done_pw
+    args.reward_pw = reward_pw
+
     n_params = sum(p.numel() for p in model.trainable_parameters())
     print(f"\nTraining CNNWorldModel  |  params={n_params:,}")
     print(f"  n_actions={ds.n_actions}  latent_dim=256")
-    print(f"  train={len(train_ds)}  val={len(val_ds)}  batch={args.batch_size}  device={device}\n")
+    print(f"  train={len(train_ds)}  val={len(val_ds)}  batch={args.batch_size}  device={device}")
+    print(f"  done_pos_weight={done_pw:.1f}  reward_pos_weight={reward_pw:.1f}\n")
 
     best_val = float("inf")
 
@@ -145,9 +156,12 @@ def _forward(model, batch, args, device):
     a_emb  = model._action(action)                       # (B, 64)
     z_pred = model._dynamics(z_t, a_emb)                 # (B, 256)
 
+    done_pw_t = torch.tensor([args.done_pw], device=device)
+    rew_pred  = model._reward(z_t, a_emb)
+    rew_w     = torch.where(reward > 0, reward.new_full(reward.shape, args.reward_pw), torch.ones_like(reward))
     l_dyn    = F.mse_loss(z_pred, z_next)
-    l_rew    = F.mse_loss(model._reward(z_t, a_emb), reward)
-    l_done   = F.binary_cross_entropy_with_logits(model._done(z_t, a_emb), done)
+    l_rew    = (rew_w * (rew_pred - reward) ** 2).mean()
+    l_done   = F.binary_cross_entropy_with_logits(model._done(z_t, a_emb), done, pos_weight=done_pw_t)
     l_value  = F.mse_loss(model._value(z_t), mc)
     l_policy = F.cross_entropy(model._policy(z_t), action)
 
@@ -175,6 +189,11 @@ def main():
     parser.add_argument("--w-done", type=float, default=1.0)
     parser.add_argument("--w-val",  type=float, default=0.5)
     parser.add_argument("--w-pol",  type=float, default=0.1)
+    # Class-imbalance corrections (auto-computed from data when not set)
+    parser.add_argument("--done-pos-weight",   type=float, default=None,
+                        help="pos_weight for done BCE; auto-computed from dataset if omitted")
+    parser.add_argument("--reward-pos-weight", type=float, default=None,
+                        help="weight for positive-reward transitions in weighted MSE; auto-computed if omitted")
     args = parser.parse_args()
     train(args)
 

@@ -18,7 +18,7 @@ from benchmark.core.budget import BudgetConfig
 from benchmark.metrics.evaluator import aggregate
 from benchmark.metrics.logger import ResultLogger
 from benchmark.registry import (
-    TRACK1_PLANNERS, TRACK2_PLANNERS,
+    TRACK1_PLANNERS, TRACK2_PLANNERS, LEWM_PLANNERS,
     make_env, make_planner, make_world_model,
 )
 from benchmark.runner import BenchmarkRunner
@@ -31,6 +31,8 @@ def resolve_planners(spec) -> list:
         return TRACK1_PLANNERS
     if spec == "track2":
         return TRACK2_PLANNERS
+    if spec == "lewm":
+        return LEWM_PLANNERS
     if isinstance(spec, list):
         out = []
         for s in spec:
@@ -40,6 +42,8 @@ def resolve_planners(spec) -> list:
                 out += TRACK1_PLANNERS
             elif s == "track2":
                 out += TRACK2_PLANNERS
+            elif s == "lewm":
+                out += LEWM_PLANNERS
             else:
                 out.append(s)
         return out
@@ -60,6 +64,10 @@ def main():
     parser.add_argument("--wall-time", type=float,
                         help="Max wall time per planning round (seconds). Overrides config.")
     parser.add_argument("--output")
+    parser.add_argument("--goal-data", nargs="+",
+                        help="Dataset .npz paths (one per --world-models entry) for "
+                             "goal-latent calibration. Enables goal-directed planning "
+                             "as described in the DINO-WM / LeWM papers.")
     args = parser.parse_args()
 
     with open(args.config) as f:
@@ -90,11 +98,22 @@ def main():
         checkpoints += [None] * (len(wm_names) - len(checkpoints))
     wm_checkpoint_map = dict(zip(wm_names, checkpoints))
 
+    goal_data_paths = args.goal_data or ([None] * len(wm_names))
+    if len(goal_data_paths) < len(wm_names):
+        goal_data_paths += [None] * (len(wm_names) - len(goal_data_paths))
+    wm_goal_map = dict(zip(wm_names, goal_data_paths))
+
     for env_name in env_names:
         env = make_env(env_name)
         for wm_name in wm_names:
-            ckpt = wm_checkpoint_map.get(wm_name)
+            ckpt      = wm_checkpoint_map.get(wm_name)
+            goal_data = wm_goal_map.get(wm_name)
             world_model = make_world_model(wm_name, env, checkpoint=ckpt, device=args.device)
+
+            # Goal-latent calibration (DINO-WM / LeWM paper planning protocol)
+            if goal_data and hasattr(world_model, "load_goal_latents"):
+                world_model.load_goal_latents(goal_data)
+                world_model.calibrate_done_threshold(goal_data)
             print(f"\n── {wm_name.upper()} on {env_name} ──")
             for planner_name in planner_names:
                 planner_kw = cfg.get("planner_kwargs", {}).get(planner_name, {})

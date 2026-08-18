@@ -91,9 +91,20 @@ def train(args):
     )
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimiser, T_max=args.epochs)
 
+    # ── Class-imbalance weights ───────────────────────────────────────
+    done_pos_rate   = float(ds.done.astype(float).mean())
+    done_pw         = (args.done_pos_weight if args.done_pos_weight is not None
+                       else (1.0 - done_pos_rate) / max(done_pos_rate, 1e-6))
+    reward_pos_rate = float((ds.reward > 0).mean())
+    reward_pw       = (args.reward_pos_weight if args.reward_pos_weight is not None
+                       else (1.0 - reward_pos_rate) / max(reward_pos_rate, 1e-6))
+    args.done_pw   = done_pw
+    args.reward_pw = reward_pw
+
     print(f"\nTraining LeWM for {args.epochs} epochs")
     print(f"  n_actions={ds.n_actions}  embed_dim={EMBED_DIM}")
-    print(f"  train={n_train}  val={n_val}  batch={args.batch_size}  device={device}\n")
+    print(f"  train={n_train}  val={n_val}  batch={args.batch_size}  device={device}")
+    print(f"  done_pos_weight={done_pw:.1f}  reward_pos_weight={reward_pw:.1f}\n")
 
     best_val = float("inf")
 
@@ -173,8 +184,10 @@ def _forward(model, sigreg, obs, action, reward, next_obs, done, mc, args, devic
     l_sig   = sigreg(latents)
 
     # ── Auxiliary heads (on predicted next state) ──────────────────────
-    l_rew   = F.mse_loss(model._reward(z_pred), reward)
-    l_done  = F.binary_cross_entropy_with_logits(model._done(z_pred), done)
+    done_pw_t = torch.tensor([args.done_pw], device=device)
+    rew_w   = torch.where(reward > 0, reward.new_full(reward.shape, args.reward_pw), torch.ones_like(reward))
+    l_rew   = (rew_w * (model._reward(z_pred) - reward) ** 2).mean()
+    l_done  = F.binary_cross_entropy_with_logits(model._done(z_pred), done, pos_weight=done_pw_t)
     l_value = F.mse_loss(model._value(z_t), mc)
 
     return (
@@ -204,6 +217,11 @@ def main():
     parser.add_argument("--w-rew",  type=float, default=1.0)
     parser.add_argument("--w-done", type=float, default=1.0)
     parser.add_argument("--w-val",  type=float, default=0.5)
+    # Class-imbalance corrections (auto-computed from data when not set)
+    parser.add_argument("--done-pos-weight",   type=float, default=None,
+                        help="pos_weight for done BCE; auto-computed from dataset if omitted")
+    parser.add_argument("--reward-pos-weight", type=float, default=None,
+                        help="weight for positive-reward transitions in weighted MSE; auto-computed if omitted")
     args = parser.parse_args()
     train(args)
 

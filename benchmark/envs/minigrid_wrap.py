@@ -29,6 +29,9 @@ _TASK_META = {
     "MiniGrid-LavaGap-S7-v0":      TaskMeta(1, "minigrid_lavagap_s7",   "short",  "sparse", False, False, _MINIGRID_N_ACTIONS),
 }
 
+# Stochastic suffix appended to env_name when slip_prob > 0
+_STOCHASTIC_SUFFIX = "_stochastic"
+
 
 class MiniGridWrapper(BenchmarkEnv):
     """
@@ -38,7 +41,7 @@ class MiniGridWrapper(BenchmarkEnv):
     render_size : pixel size of the full-grid RGB render (H=W)
     """
 
-    def __init__(self, env_id: str = "MiniGrid-Empty-8x8-v0", render_size: int = 224):
+    def __init__(self, env_id: str = "MiniGrid-Empty-8x8-v0", render_size: int = 224, slip_prob: float = 0.0):
         try:
             import gymnasium as gym
             import minigrid  # registers envs
@@ -47,6 +50,7 @@ class MiniGridWrapper(BenchmarkEnv):
 
         self._env_id = env_id
         self._render_size = render_size
+        self._slip_prob = slip_prob
         self._env = gym.make(env_id, render_mode="rgb_array")
         self._last_obs: np.ndarray = None
         self._steps = 0
@@ -60,6 +64,8 @@ class MiniGridWrapper(BenchmarkEnv):
         return self._last_obs
 
     def step(self, action: int) -> Tuple[np.ndarray, float, bool, Dict]:
+        if self._slip_prob > 0 and np.random.random() < self._slip_prob:
+            action = np.random.randint(self.n_actions)
         obs, reward, terminated, truncated, info = self._env.step(action)
         self._steps += 1
         done = terminated or truncated
@@ -77,10 +83,21 @@ class MiniGridWrapper(BenchmarkEnv):
 
     @property
     def task_meta(self) -> TaskMeta:
-        return _TASK_META.get(
+        meta = _TASK_META.get(
             self._env_id,
             TaskMeta(1, self._env_id, "medium", "sparse", False, True, _MINIGRID_N_ACTIONS),
         )
+        if self._slip_prob > 0:
+            return TaskMeta(
+                meta.tier,
+                meta.env_name + _STOCHASTIC_SUFFIX,
+                meta.horizon,
+                meta.reward_density,
+                True,
+                meta.goal_conditioned,
+                meta.branching_factor,
+            )
+        return meta
 
     @property
     def n_actions(self) -> int:
