@@ -8,9 +8,9 @@ that fraction of real goal arrivals are correctly detected.
 
 Usage:
     python training/calibrate_lewm_done.py \
-        --checkpoint /scratch/.../checkpoints/lewm_goal_heuristic_minigrid_empty_8x8.pt \
-        --data       /scratch/.../data/minigrid_empty_8x8.npz \
-        --output     /scratch/.../checkpoints/lewm_geodone_minigrid_empty_8x8.pt \
+        --checkpoint checkpoints/lewm_goal_heuristic_minigrid_empty_8x8.pt \
+        --data       data/minigrid_empty_8x8.npz \
+        --output     checkpoints/lewm_geodone_minigrid_empty_8x8.pt \
         --recall     0.95
 """
 

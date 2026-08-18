@@ -13,9 +13,8 @@ __pycache__/
 dist/
 build/
 
-# SLURM logs
-jobs/*.log
-jobs/*.err
+# SLURM job scripts and logs (cluster-specific)
+jobs/
 
 # Editor
 .DS_Store

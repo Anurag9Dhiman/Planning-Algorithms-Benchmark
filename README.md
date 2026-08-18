@@ -19,7 +19,7 @@ We hold the world model, compute budget, and dataset fixed. Only the planner cha
    - [Train world models](#72-train-world-models)
    - [Run the benchmark](#73-run-the-benchmark)
    - [Evaluate world model quality](#74-evaluate-world-model-quality)
-8. [SLURM Jobs Reference](#8-slurm-jobs-reference)
+8. [Configuration](#8-configuration)
 9. [Configuration](#9-configuration)
 10. [Results](#10-results)
 11. [Key Findings](#11-key-findings)
@@ -101,25 +101,6 @@ Planning-Algorithms-Benchmark/
 │   ├── run_main.py               # Full benchmark sweep (all planners × envs × models)
 │   ├── run_quick.py              # Smoke test (single planner/env/model)
 │   └── eval_world_models.py      # Measure rollout divergence for each world model
-│
-├── jobs/                         # SLURM job scripts (numbered pipeline)
-│   ├── 01_collect_data.slurm
-│   ├── 01b_collect_empty8x8.slurm
-│   ├── 02_train_dino_wm.slurm
-│   ├── 03_train_lewm.slurm
-│   ├── 04_run_benchmark.slurm
-│   ├── 04a_bench_empty8x8.slurm
-│   ├── 04b_bench_fourrooms.slurm
-│   ├── 05_oracle_test.slurm
-│   ├── 05b_oracle_fourrooms.slurm
-│   ├── 06_wm_eval.slurm
-│   ├── 07_budget_sweep.slurm
-│   ├── 07b_budget_sweep_oracle.slurm
-│   ├── 08a_train_cnn_wm.slurm
-│   ├── 08b_train_dino_ft.slurm
-│   ├── 09_benchmark_new_models.slurm
-│   ├── 09b_benchmark_dino_ft.slurm
-│   └── submit_all.sh
 │
 ├── configs/
 │   ├── default.yaml              # Budget, planner kwargs, envs
@@ -319,28 +300,13 @@ pip install -r requirements-training.txt
 pip install minigrid gymnasium
 ```
 
-### Python environment (cluster)
-
-```bash
-conda activate llm_stack
-# or use the full path:
-/home/ma25m004/.conda/envs/llm_stack/bin/python3
-```
-
 ### DINOv2 checkpoint
 
-The frozen encoder requires the DINOv2-small weights to be downloaded locally:
+The frozen encoder downloads automatically via HuggingFace on first use (`facebook/dinov2-small`). To use a local copy instead, set the environment variable:
 
 ```bash
-# Download once
-python -c "
-from transformers import Dinov2Model
-model = Dinov2Model.from_pretrained('facebook/dinov2-small')
-model.save_pretrained('/scratch/ma25m004/dinov2-small')
-"
+export DINOV2_CHECKPOINT=/path/to/local/dinov2-small
 ```
-
-The code reads from `/scratch/ma25m004/dinov2-small`. Update `DINO_CHECKPOINT` in `benchmark/world_models/dino_wm.py` if your path differs.
 
 ---
 
@@ -353,14 +319,14 @@ The code reads from `/scratch/ma25m004/dinov2-small`. Update `DINO_CHECKPOINT` i
 python training/collect_data.py \
     --env MiniGrid-Empty-8x8-v0 \
     --episodes 1500 \
-    --output /scratch/.../data/minigrid_empty_8x8.npz
+    --output data/minigrid_empty_8x8.npz
 
 # MiniGrid FourRooms (~295k transitions)
 python training/collect_data.py \
     --env MiniGrid-FourRooms-v0 \
     --episodes 2000 \
     --epsilon-greedy 0.3 \
-    --output /scratch/.../data/minigrid_fourrooms.npz
+    --output data/minigrid_fourrooms.npz
 ```
 
 Each `.npz` file contains arrays: `obs` (H×W×3, uint8), `action`, `reward`, `next_obs`, `done`.
@@ -380,10 +346,10 @@ Dataset statistics (confirmed):
 
 ```bash
 python training/train_dino_wm.py \
-    --data /scratch/.../data/minigrid_empty_8x8.npz \
+    --data data/minigrid_empty_8x8.npz \
     --epochs 50 --batch-size 512 --lr 3e-4 \
     --device cuda \
-    --output /scratch/.../checkpoints/dino_wm_minigrid_empty_8x8.pt
+    --output checkpoints/dino_wm_minigrid_empty_8x8.pt
 ```
 
 Pre-encodes all observations once at startup (fast, since encoder is frozen).
@@ -392,20 +358,20 @@ Pre-encodes all observations once at startup (fast, since encoder is frozen).
 
 ```bash
 python training/train_lewm.py \
-    --data /scratch/.../data/minigrid_empty_8x8.npz \
+    --data data/minigrid_empty_8x8.npz \
     --epochs 100 --batch-size 256 --lr 1e-4 \
     --device cuda \
-    --output /scratch/.../checkpoints/lewm_minigrid_empty_8x8.pt
+    --output checkpoints/lewm_minigrid_empty_8x8.pt
 ```
 
 #### CNN-WM (CNN from scratch — recommended)
 
 ```bash
 python training/train_cnn_wm.py \
-    --data /scratch/.../data/minigrid_empty_8x8.npz \
+    --data data/minigrid_empty_8x8.npz \
     --epochs 100 --batch-size 256 --lr 1e-4 \
     --device cuda \
-    --output /scratch/.../checkpoints/cnn_wm_minigrid_empty_8x8.pt
+    --output checkpoints/cnn_wm_minigrid_empty_8x8.pt
 ```
 
 Training took **38 minutes** on a single GPU. Final validation loss: **0.254**.
@@ -416,13 +382,13 @@ Requires an existing DINO-WM heads checkpoint to warm-start from:
 
 ```bash
 python training/train_dino_wm_finetune.py \
-    --data /scratch/.../data/minigrid_empty_8x8.npz \
-    --checkpoint /scratch/.../checkpoints/dino_wm_minigrid_empty_8x8.pt \
+    --data data/minigrid_empty_8x8.npz \
+    --checkpoint checkpoints/dino_wm_minigrid_empty_8x8.pt \
     --unfreeze-blocks 2 \
     --epochs 30 --batch-size 64 \
     --lr 3e-4 --lr-enc 1e-5 \
     --device cuda \
-    --output /scratch/.../checkpoints/dino_wm_ft_minigrid_empty_8x8.pt
+    --output checkpoints/dino_wm_ft_minigrid_empty_8x8.pt
 ```
 
 Key: `--lr-enc 1e-5` is 30× smaller than head LR to preserve pretrained features while adapting to the domain. Training took **10 hours** (online encoding — cannot pre-encode when the encoder changes).
@@ -438,7 +404,7 @@ python experiments/run_main.py \
     --config configs/default.yaml \
     --envs minigrid_empty_8x8 \
     --world-models cnn_wm \
-    --checkpoints /scratch/.../checkpoints/cnn_wm_minigrid_empty_8x8.pt \
+    --checkpoints checkpoints/cnn_wm_minigrid_empty_8x8.pt \
     --planners all --episodes 20 --budget 200 --device cuda \
     --output results/cnn_wm_empty8x8
 ```
@@ -485,8 +451,8 @@ python experiments/eval_world_models.py \
     --envs minigrid_empty_8x8 minigrid_fourrooms \
     --world-models cnn_wm cnn_wm \
     --checkpoints \
-        /scratch/.../checkpoints/cnn_wm_minigrid_empty_8x8.pt \
-        /scratch/.../checkpoints/cnn_wm_minigrid_fourrooms.pt \
+        checkpoints/cnn_wm_minigrid_empty_8x8.pt \
+        checkpoints/cnn_wm_minigrid_fourrooms.pt \
     --device cuda --episodes 20 \
     --output results/wm_eval/cnn_wm.json
 ```
@@ -494,38 +460,6 @@ python experiments/eval_world_models.py \
 Output includes L2 error at horizons H=1,2,5,10,20, reward MAE, and done accuracy.
 
 ---
-
-## 8. SLURM Jobs Reference
-
-All jobs use `/home/ma25m004/.conda/envs/llm_stack/bin/python3` and write logs to `/scratch/ma25m004/Planning-Algorithms-Benchmark/logs/`.
-
-| Job file | Job name | Time | What it does | Status |
-|---|---|---|---|---|
-| `01_collect_data.slurm` | collect-data | 4h | Collect FourRooms dataset | Done |
-| `01b_collect_empty8x8.slurm` | collect-e8 | 2h | Collect Empty-8x8 dataset | Done |
-| `02_train_dino_wm.slurm` | train-dino | 6h | Train frozen DINO-WM on both envs | Done |
-| `03_train_lewm.slurm` | train-lewm | 8h | Train LeWM on both envs | Done |
-| `04_run_benchmark.slurm` | benchmark | 8h | Full sweep: DINO-WM + LeWM | Done |
-| `05_oracle_test.slurm` | oracle-e8 | 4h | Oracle benchmark, Empty-8x8 | Done |
-| `05b_oracle_fourrooms.slurm` | oracle-fr | 4h | Oracle benchmark, FourRooms | Done |
-| `06_wm_eval.slurm` | wm-eval | 2h | Rollout divergence: DINO + LeWM | Done |
-| `07_budget_sweep.slurm` | budget-sweep | 24h | Budget sweep B=200→5000 (neural WMs) | **TIMEOUT** |
-| `07b_budget_sweep_oracle.slurm` | budget-oracle | 48h | Budget sweep (oracle) | **TIMEOUT** |
-| `08a_train_cnn_wm.slurm` | train-cnn-wm | 6h | Train CNN-WM on both envs | Done (38 min) |
-| `08b_train_dino_ft.slurm` | train-dino-ft | 12h | Fine-tune DINO-WM (2 blocks) | Done (10h) |
-| `09_benchmark_new_models.slurm` | benchmark-new | 12h | Benchmark CNN-WM + DINO-WM-FT | Done (2h) |
-| `09b_benchmark_dino_ft.slurm` | bench-dino-ft | 6h | Benchmark DINO-WM-FT (retry) | Done (2.5h) |
-
-### Submitting the full pipeline
-
-```bash
-# Train new models and chain the benchmark automatically
-JOB_A=$(sbatch --parsable jobs/08a_train_cnn_wm.slurm)
-JOB_B=$(sbatch --parsable jobs/08b_train_dino_ft.slurm)
-
-# Benchmark fires when BOTH training jobs complete
-sbatch --dependency=afterok:${JOB_A}:${JOB_B} jobs/09_benchmark_new_models.slurm
-```
 
 ---
 

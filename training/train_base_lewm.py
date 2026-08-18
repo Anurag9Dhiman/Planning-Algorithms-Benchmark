@@ -10,9 +10,9 @@ This is the original LeWM training before value/done heads are added.
 
 Usage:
     python training/train_base_lewm.py \
-        --data    /scratch/.../data/minigrid_empty_8x8.npz \
+        --data    data/minigrid_empty_8x8.npz \
         --epochs  100 \
-        --output  /scratch/.../checkpoints/base_lewm_minigrid_empty_8x8.pt
+        --output  checkpoints/base_lewm_minigrid_empty_8x8.pt
 """
 
 import argparse

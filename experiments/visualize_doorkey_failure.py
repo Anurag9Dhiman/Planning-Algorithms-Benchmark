@@ -10,9 +10,9 @@ Produces two plots saved to --output-dir:
 
 Usage:
     python experiments/visualize_doorkey_failure.py \
-        --checkpoint /scratch/.../checkpoints/base_lewm_minigrid_doorkey_8x8_goalft.pt \
-        --goal-data  /scratch/.../data/minigrid_doorkey_8x8_goalft_data.npz \
-        --output-dir /scratch/.../viz/doorkey_failure \
+        --checkpoint checkpoints/base_lewm_minigrid_doorkey_8x8_goalft.pt \
+        --goal-data  data/minigrid_doorkey_8x8_goalft_data.npz \
+        --output-dir viz/doorkey_failure \
         --seed 3
 """
 

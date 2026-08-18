@@ -14,9 +14,9 @@ closer to the goal in goal-conditioned tasks).
 
 Usage:
     python training/train_lewm_her.py \
-        --checkpoint /scratch/.../lewm_fixed_minigrid_empty_8x8.pt \
-        --data       /scratch/.../data/minigrid_empty_8x8.npz \
-        --output     /scratch/.../checkpoints/lewm_her_minigrid_empty_8x8.pt
+        --checkpoint lewm_fixed_minigrid_empty_8x8.pt \
+        --data       data/minigrid_empty_8x8.npz \
+        --output     checkpoints/lewm_her_minigrid_empty_8x8.pt
 """
 
 import argparse

@@ -8,9 +8,9 @@ This is the original DINO-WM concept before any planning components are added.
 
 Usage:
     python training/train_base_dino_wm.py \
-        --data    /scratch/.../data/minigrid_empty_8x8.npz \
+        --data    data/minigrid_empty_8x8.npz \
         --epochs  50 \
-        --output  /scratch/.../checkpoints/base_dino_wm_minigrid_empty_8x8.pt
+        --output  checkpoints/base_dino_wm_minigrid_empty_8x8.pt
 """
 
 import argparse

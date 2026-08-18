@@ -8,9 +8,9 @@ the trained value head.
 
 Usage:
     python training/bake_goal_latents.py \
-        --checkpoint /scratch/.../lewm_fixed_minigrid_empty_8x8.pt \
-        --data       /scratch/.../data/minigrid_empty_8x8.npz \
-        --output     /scratch/.../checkpoints/lewm_goal_heuristic_minigrid_empty_8x8.pt
+        --checkpoint lewm_fixed_minigrid_empty_8x8.pt \
+        --data       data/minigrid_empty_8x8.npz \
+        --output     checkpoints/lewm_goal_heuristic_minigrid_empty_8x8.pt
 """
 
 import argparse

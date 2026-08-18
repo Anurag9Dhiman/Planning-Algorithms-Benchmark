@@ -8,11 +8,11 @@ states along goal-reaching paths.
 
 Usage:
     python training/finetune_lewm_goal.py \
-        --checkpoint /scratch/.../checkpoints/base_lewm_minigrid_empty_8x8.pt \
-        --data       /scratch/.../data/minigrid_empty_8x8.npz \
+        --checkpoint checkpoints/base_lewm_minigrid_empty_8x8.pt \
+        --data       data/minigrid_empty_8x8.npz \
         --epochs     20 \
         --lr         1e-5 \
-        --output     /scratch/.../checkpoints/base_lewm_minigrid_empty_8x8_goalft.pt
+        --output     checkpoints/base_lewm_minigrid_empty_8x8_goalft.pt
 """
 
 import argparse

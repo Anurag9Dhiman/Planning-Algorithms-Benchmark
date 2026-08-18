@@ -9,9 +9,9 @@ observations once, then trains only the auxiliary heads with:
 
 Usage:
     python training/train_lewm_value_ft.py \
-        --checkpoint /scratch/.../lewm_fixed_minigrid_empty_8x8.pt \
-        --data       /scratch/.../data/minigrid_empty_8x8.npz \
-        --output     /scratch/.../checkpoints/lewm_valueft_minigrid_empty_8x8.pt
+        --checkpoint lewm_fixed_minigrid_empty_8x8.pt \
+        --data       data/minigrid_empty_8x8.npz \
+        --output     checkpoints/lewm_valueft_minigrid_empty_8x8.pt
 """
 
 import argparse

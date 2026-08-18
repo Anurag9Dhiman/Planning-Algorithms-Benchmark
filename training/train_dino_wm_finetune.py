@@ -12,12 +12,12 @@ Key differences from train_dino_wm.py
 Usage
 -----
     python training/train_dino_wm_finetune.py \\
-        --data       /scratch/.../data/minigrid_empty_8x8.npz \\
+        --data       data/minigrid_empty_8x8.npz \\
         --checkpoint /home/.../checkpoints/dino_wm_minigrid_empty_8x8.pt \\
         --unfreeze-blocks 2 \\
         --epochs 30 \\
         --batch-size 64 \\
-        --output /scratch/.../checkpoints/dino_wm_ft_empty8x8.pt
+        --output checkpoints/dino_wm_ft_empty8x8.pt
 """
 
 import argparse

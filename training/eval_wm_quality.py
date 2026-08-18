@@ -15,8 +15,8 @@ the model was trained on but a clean proxy for calibration quality).
 Usage:
     python training/eval_wm_quality.py \
         --model   cnn_wm \
-        --ckpt    /scratch/.../checkpoints/cnn_wm_fixed_minigrid_empty_8x8.pt \
-        --data    /scratch/.../data/minigrid_empty_8x8.npz \
+        --ckpt    checkpoints/cnn_wm_fixed_minigrid_empty_8x8.pt \
+        --data    data/minigrid_empty_8x8.npz \
         --env     minigrid_empty_8x8 \
         --device  cuda
 """

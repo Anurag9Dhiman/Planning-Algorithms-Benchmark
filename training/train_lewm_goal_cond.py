@@ -15,9 +15,9 @@ the mean goal latent baked in for zero-configuration inference.
 
 Usage:
     python training/train_lewm_goal_cond.py \
-        --checkpoint /scratch/.../lewm_fixed_minigrid_empty_8x8.pt \
-        --data       /scratch/.../data/minigrid_empty_8x8.npz \
-        --output     /scratch/.../checkpoints/lewm_goal_cond_minigrid_empty_8x8.pt
+        --checkpoint lewm_fixed_minigrid_empty_8x8.pt \
+        --data       data/minigrid_empty_8x8.npz \
+        --output     checkpoints/lewm_goal_cond_minigrid_empty_8x8.pt
 """
 
 import argparse
