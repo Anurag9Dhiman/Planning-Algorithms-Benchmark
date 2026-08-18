@@ -9,17 +9,6 @@ pip install -r requirements.txt
 pip install -r requirements-training.txt
 ```
 
-## Quick Start
-
-```bash
-# Test with perfect model (no checkpoint needed)
-python experiments/run_main.py \
-    --planners track1 \
-    --world-models perfect \
-    --envs minigrid_empty_8x8 \
-    --episodes 5
-```
-
 ## Pipeline
 
 **1. Collect training data**
@@ -53,7 +42,6 @@ python experiments/run_main.py \
 
 - `dino_wm` — frozen DINOv2-small encoder + learned MLP heads
 - `lewm` — ViT-tiny encoder trained from scratch with JEPA + SIGReg
-- `perfect` — oracle model using ground-truth env state (no checkpoint needed)
 
 > DINOv2 weights download automatically via HuggingFace on first use. To use a local copy: `export DINOV2_CHECKPOINT=/path/to/dinov2-small`
 
